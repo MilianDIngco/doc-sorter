@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/docsorter.dir/src/main.cpp.o CMakeFiles/docsorter.dir/src/auth.cpp.o CMakeFiles/docsorter.dir/src/drive_client.cpp.o -o docsorter  -lcurl 
