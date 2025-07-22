@@ -1,3 +1,0 @@
-/home/milianingco/HPC/doc-sorter/build/CMakeFiles/docsorter.dir
-/home/milianingco/HPC/doc-sorter/build/CMakeFiles/edit_cache.dir
-/home/milianingco/HPC/doc-sorter/build/CMakeFiles/rebuild_cache.dir

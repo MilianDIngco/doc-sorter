@@ -4,7 +4,11 @@
 #include <string>
 #include <unistd.h>
 
-int main(int argc, char** argv) {
+extern "C" {
+  #include "libstemmer.h"
+}
+
+int main() {
   DriveAuthorization da;
 
   // Try to get access code first
@@ -30,18 +34,28 @@ int main(int argc, char** argv) {
   // Make drive client
   DriveClient dc(da);
 
-  std::vector<DriveFile> files = dc.listFiles();
+  // go thru each file, check if document 
+  // check if document id exists in local json file
+  // if not, vectorize it, then store (id, vector) pair in json file locally
 
-  for (auto file : files) {
-    std::cout << file.id << ": " << file.name << ", type: " << file.mimeType << std::endl;
+  // then, run the k-means cluster algorithm
+
+  sb_stemmer* stemmer = sb_stemmer_new("english", "UTF_8");
+  if (!stemmer) {
+    std::cerr << "ERROR: Could not create stemmer" << std::endl;
+    return -1;
   }
 
-  for (auto file : files) {
-    if (file.isDoc()) {
-      std::string doc_content = dc.getDocumentContent(file.id);
-      std::cout << doc_content << std::endl;
-      break;
-    }
-  }
+  std::string input = "flauntedly";
+
+  const sb_symbol* stemmed = sb_stemmer_stem(
+    stemmer, 
+    reinterpret_cast<const sb_symbol*>(input.c_str()),
+    static_cast<int>(input.size())
+  );
+
+  std::string result(reinterpret_cast<const char*>(stemmed), sb_stemmer_length(stemmer));
+
+  std::cout << input << ": " << result << std::endl;
 
 }
