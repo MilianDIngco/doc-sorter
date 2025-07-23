@@ -3,6 +3,7 @@
 
 #include "drive_client.hpp"
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 struct Document {
@@ -17,6 +18,8 @@ struct Document {
 class DocVector {
   private:
     DriveClient dc;
+    std::string stop_words_filepath = "./data/EN-Stopwords.txt";
+    std::unordered_set<std::string> stop_words;
 
     void LoadStopWords();
 
@@ -24,10 +27,12 @@ class DocVector {
 
     void RemoveStopWords(std::string& content);
 
-    void TokenizeDoc(std::string& content);
+    std::vector<std::string> TokenizeDoc(std::string& content);
 
   public: 
-    DocVector(DriveClient dc) : dc(dc) {};
+    DocVector(DriveClient dc) : dc(dc) { 
+      LoadStopWords();
+    };
 
     Document VectorizeDoc(const std::string& doc_id);
 

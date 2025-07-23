@@ -5,6 +5,7 @@
 #include <string>
 #include <unistd.h>
 #include <re2/re2.h>
+#include <vector>
 
 extern "C" {
   #include "libstemmer.h"
@@ -45,6 +46,7 @@ int main() {
 
   // then, run the k-means cluster algorithm
 
+  /*
   sb_stemmer* stemmer = sb_stemmer_new("english", "UTF_8");
   if (!stemmer) {
     std::cerr << "ERROR: Could not create stemmer" << std::endl;
@@ -69,4 +71,7 @@ int main() {
   re2::RE2::PartialMatch(text, "(\\d{3}-\\d{3}-\\d{4})", &number);
 
   std::cout << number << std::endl;
+
+  std::string content = "Milian Ingco's work includes this: some other stuff!!";
+*/
 }

@@ -88,6 +88,7 @@ add_executable(docsorter
   src/main.cpp
   src/auth.cpp
   src/drive_client.cpp
+  src/doc_vec.cpp
 )
 
 target_link_libraries(docsorter
