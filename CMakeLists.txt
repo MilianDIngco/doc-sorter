@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.20)
 project(docsorter VERSION 1.0)
 
 # Set C++ standard
@@ -76,6 +76,13 @@ target_include_directories(libstemmer PUBLIC
     ${CMAKE_SOURCE_DIR}/library/libstemmer/src_c
 )
 
+# add abseil subdirectory as prereq for re2
+add_subdirectory(${CMAKE_SOURCE_DIR}/library/abseil-cpp)
+
+# add re2 subdirectory for regex
+set(RE2_INSTALL OFF CACHE BOOL "Disable RE2 installation")
+add_subdirectory(${CMAKE_SOURCE_DIR}/library/re2)
+
 # create executable
 add_executable(docsorter
   src/main.cpp
@@ -87,6 +94,7 @@ target_link_libraries(docsorter
   libstemmer
   ${CURL_LIBRARIES}
   nlohmann_json::nlohmann_json
+  re2::re2
 )
 
 # add compiler flags from pkg-config

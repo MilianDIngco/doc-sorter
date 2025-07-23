@@ -14,19 +14,17 @@ struct Document {
   Document(DriveFile file) : id(file.id), name(file.name) {};
 };
 
-struct Word {
-  
-};
-
 class DocVector {
   private:
     DriveClient dc;
 
     void LoadStopWords();
 
-    Word tokenize(const std::string& word);
+    void NormalizeDoc(std::string& content);
 
-    
+    void RemoveStopWords(std::string& content);
+
+    void TokenizeDoc(std::string& content);
 
   public: 
     DocVector(DriveClient dc) : dc(dc) {};

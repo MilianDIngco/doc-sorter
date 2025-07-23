@@ -1,8 +1,10 @@
 #include "auth.hpp"
+#include "doc_vec.hpp"
 #include "drive_client.hpp"
 #include <iostream>
 #include <string>
 #include <unistd.h>
+#include <re2/re2.h>
 
 extern "C" {
   #include "libstemmer.h"
@@ -34,6 +36,9 @@ int main() {
   // Make drive client
   DriveClient dc(da);
 
+  // make document vectorizer
+  DocVector dv(dc);
+
   // go thru each file, check if document 
   // check if document id exists in local json file
   // if not, vectorize it, then store (id, vector) pair in json file locally
@@ -58,4 +63,10 @@ int main() {
 
   std::cout << input << ": " << result << std::endl;
 
+  std::string text = "My number is 123-456-7890.";
+  std::string number;
+
+  re2::RE2::PartialMatch(text, "(\\d{3}-\\d{3}-\\d{4})", &number);
+
+  std::cout << number << std::endl;
 }
