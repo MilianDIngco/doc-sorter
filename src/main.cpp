@@ -14,6 +14,7 @@ extern "C" {
 int main() {
   DriveAuthorization da;
 
+  /*
   // Try to get access code first
   if (!da.loadTokens()) {
     // If fail, generate auth url
@@ -32,7 +33,7 @@ int main() {
     }
 
     std::cout << "This is your access token " << da.getValidAccessToken() << std::endl;
-  }
+  }*/
 
   // Make drive client
   DriveClient dc(da);
@@ -40,38 +41,25 @@ int main() {
   // make document vectorizer
   DocVector dv(dc);
 
+  dv.test();
+
+  /*
+  std::vector<DriveFile> files = dc.listFiles();
+  DriveFile documentFile;
+  for (int i = 0; i < (int) files.size(); i++) {
+    if (files.at(i).isDoc()) {
+      documentFile = files.at(i);
+    }
+  } 
+
+  Document doc = dv.VectorizeDoc(documentFile.id);
+  std::cout << doc.toString() << std::endl;
+  */
+
   // go thru each file, check if document 
   // check if document id exists in local json file
   // if not, vectorize it, then store (id, vector) pair in json file locally
 
   // then, run the k-means cluster algorithm
 
-  /*
-  sb_stemmer* stemmer = sb_stemmer_new("english", "UTF_8");
-  if (!stemmer) {
-    std::cerr << "ERROR: Could not create stemmer" << std::endl;
-    return -1;
-  }
-
-  std::string input = "flauntedly";
-
-  const sb_symbol* stemmed = sb_stemmer_stem(
-    stemmer, 
-    reinterpret_cast<const sb_symbol*>(input.c_str()),
-    static_cast<int>(input.size())
-  );
-
-  std::string result(reinterpret_cast<const char*>(stemmed), sb_stemmer_length(stemmer));
-
-  std::cout << input << ": " << result << std::endl;
-
-  std::string text = "My number is 123-456-7890.";
-  std::string number;
-
-  re2::RE2::PartialMatch(text, "(\\d{3}-\\d{3}-\\d{4})", &number);
-
-  std::cout << number << std::endl;
-
-  std::string content = "Milian Ingco's work includes this: some other stuff!!";
-*/
 }

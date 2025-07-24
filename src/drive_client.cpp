@@ -15,7 +15,7 @@ std::vector<DriveFile> DriveClient::listFiles(const std::string& query, int maxR
 
   std::string baseURL = "https://www.googleapis.com/drive/v3/files";
   std::string params = 
-    "fields=" + this->url_encode("files(id,name,mimeType,parents)") + "&" +
+    "fields=" + this->url_encode("files(id,name,mimeType,parents,modifiedTime)") + "&" +
     "pageSize=" + this->url_encode(std::to_string(maxResults));
 
   if (!query.empty()) {
@@ -35,6 +35,7 @@ std::vector<DriveFile> DriveClient::listFiles(const std::string& query, int maxR
         file.id = fileJSON.value("id", "");
         file.name = fileJSON.value("name", "");
         file.mimeType = fileJSON.value("mimeType", "");
+        file.modifiedTime = fileJSON.value("modifiedTime", "");
 
         if (fileJSON.contains("parents")) {
           for(const auto& parent : fileJSON["parents"]) {

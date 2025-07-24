@@ -9,6 +9,7 @@ struct DriveFile {
   std::string id;
   std::string name;
   std::string mimeType;
+  std::string modifiedTime;
   std::vector<std::string> parents;
 
   bool isDoc() {
