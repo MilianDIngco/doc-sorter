@@ -7,82 +7,167 @@
 #include <cmath>
 #include <fstream>
 #include <memory>
+#include <ostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 #include <iostream>
 
-std::vector<Document> DocVector::loadDocuments(const std::string& filepath) {
+void DocVector::loadDocuments(const std::string& filepath) {
+  try {
+    docJSON = loadJson(filepath);
+  } catch(std::runtime_error e) {
+    // Load info
+    throw e;
+  }
 
+  // Load dictionary
+  std::cout << "Loading dictionary" << std::endl;
+  for (auto& [word, index] : docJSON["dictionary"].items()) {
+    this->dictionary[word] = index;
+    this->total_words++;
+  }
+
+  // Load doc_freq
+  std::cout << "Loading doc frequency" << std::endl;
+  this->doc_freq.resize(this->total_words);
+  for (auto& [index, amount] : docJSON["doc_freq"].items()) {
+    this->doc_freq.at(std::stoi(index)) = amount;
+  }
+
+  // Load documents
+  std::cout << "Loading documents" << std::endl;
+  for (auto& [doc_id, doc_data] : docJSON["document"].items()) {
+    std::unique_ptr<Document> doc = std::make_unique<Document>();
+    
+    doc->id = doc_data.value("id", "");
+    doc->name = doc_data.value("name", "");
+    doc->modifiedTime = doc_data.value("modifiedTime", "");
+    doc->highest_freq = doc_data.value("highest_freq", 0);
+
+    std::cout << "Name: " << doc->name << std::endl;
+    // Load tf_vector
+    int tf_vector_size = doc_data.value("tf_vector_size", 0);
+    doc->tf_vector.resize(tf_vector_size);
+    for (int i = 0; i < tf_vector_size; i++) {
+      int amt = doc_data["tf_vector"][std::to_string(i)];
+      doc->tf_vector.at(i) = amt;
+    }
+
+    // load tf_idf_vector
+    int tf_idf_vector_size = doc_data.value("tf_idf_vector_size", 0);
+    doc->tf_idf_vector.resize(tf_idf_vector_size);
+    for (int i = 0; i < tf_idf_vector_size; i++) {
+      double amt = doc_data["tf_idf_vector"][std::to_string(i)];
+      doc->tf_idf_vector.at(i) = amt;
+    }
+
+    this->doc_map[doc->id] = std::move(doc);
+  }
 }
 
-void DocVector::saveDocument(Document document) {
+void DocVector::saveDocument(Document* doc) {
+  docJSON["document"][doc->id]["id"] = doc->id;
+  docJSON["document"][doc->id]["name"] = doc->name;
+  docJSON["document"][doc->id]["modifiedTime"] = doc->modifiedTime;
+  docJSON["document"][doc->id]["highest_freq"] = doc->highest_freq;
+  docJSON["document"][doc->id]["tf_vector_size"] = (int) doc->tf_vector.size();
+  docJSON["document"][doc->id]["tf_idf_vector_size"] = (int) doc->tf_idf_vector.size();
 
+  // load tf_vector
+  for (int i = 0; i < (int) doc->tf_vector.size(); i++) {
+    docJSON["document"][doc->id]["tf_vector"][std::to_string(i)] = doc->tf_vector.at(i);
+  }
+
+  // load tf_idf_vector
+  for (int i = 0; i < (int) doc->tf_idf_vector.size(); i++) {
+    docJSON["document"][doc->id]["tf_idf_vector"][std::to_string(i)] = doc->tf_idf_vector.at(i);
+  }
 }
 
-void DocVector::calculateIDF(std::vector<Document>& documents) {
-  int n_documents = documents.size();
+void DocVector::saveJSON() {
+  // save dictionary
+  for (auto& [word, index] : this->dictionary) {
+    docJSON["dictionary"][word] = index;
+  }
 
-  for (int i = 0; i < n_documents; i++) {
-    Document* curr = &documents.at(i);
+  // save doc_freq
+  for (int i = 0; i < this->doc_freq.size(); i++) {
+    docJSON["doc_freq"][std::to_string(i)] = this->doc_freq.at(i);
+  } 
 
+  // save documents
+  for (auto& [id, doc] : this->doc_map) {
+    std::cout << "Saving " << doc->id << ": " << doc->name << std::endl;
+    this->saveDocument(doc.get());
+  }
+
+  // save da file
+  std::ofstream tokenFile(this->doc_filepath);
+  tokenFile << this->docJSON.dump(2);
+}
+
+void DocVector::calculateIDF() {
+  int n_documents = this->doc_map.size();
+  for (auto& [id, doc] : this->doc_map) {
     // Resize tf_vector.size() so all are the same
-    if ((int) curr->tf_vector.size() < total_words) 
-      curr->tf_vector.resize(total_words);
+    if ((int) doc->tf_vector.size() < total_words) 
+      doc->tf_vector.resize(total_words);
 
-    curr->tf_idf_vector.resize(total_words);
+    doc->tf_idf_vector.resize(total_words);
 
     for (auto pair : this->dictionary) {
       // Normalize term frequency with the document's highest frequency word
-      double term_freq = 0.5 + (0.5 * (double) curr->tf_vector.at(pair.second) / curr->highest_freq);
-      double doc_freq = std::log10(n_documents / this->doc_freq.at(pair.second));
+      int highest_freq_nozero = (doc->highest_freq == 0) ? 1 : doc->highest_freq;
+      double term_freq = 0.5 + (0.5 * (double) doc->tf_vector.at(pair.second) / highest_freq_nozero);
+      double d_freq_nozero = (this->doc_freq.at(pair.second) == 0) ? 1 : this->doc_freq.at(pair.second);
+      double doc_freq = std::log10(n_documents / d_freq_nozero);
 
-      curr->tf_idf_vector.at(pair.second) = doc_freq * term_freq;
+      doc->tf_idf_vector.at(pair.second) = doc_freq * term_freq;
     }
   }
+
 }
 
-Document DocVector::vectorizeDoc(const std::string& doc_id) {
-  // Get document content
-  DriveFile file = this->dc.getFileMetadata(doc_id);
-  std::string content = this->dc.getDocumentContent(doc_id);
+Document& DocVector::vectorizeDoc(DriveFile& file) {
+  if (!file.isDoc()) {
+    throw std::runtime_error("ERROR: Vectorize Doc passed non-document file");
+  }
+  // Check if file_id exists in docMap, if so, check time last modified
+  if (doc_map.contains(file.id) && 
+      doc_map[file.id]->modifiedTime == file.modifiedTime) {
+      std::cout << "Using cached document" << std::endl;
+    return *doc_map[file.id].get();
+  }
 
-  Document doc(file);
+  // Get document content
+  std::cout << "Getting content" << std::endl;
+  std::string content = this->dc.getDocumentContent(file.id);
+
+  SmartDoc doc = std::make_unique<Document>(file);
 
   // Tokenize the document
+  std::cout << "Tokenizing document" << std::endl;
   SmartWord head = this->tokenizeDoc(content);
-  doc.head = std::move(head);
+  doc->head = std::move(head);
 
   // Remove stop words
-  this->removeStopWords(doc);
+  std::cout << "Removing stop words" << std::endl;
+  this->removeStopWords(*doc);
 
   // Normalize document
-  this->normalizeDoc(doc);
+  std::cout << "Normalizing document" << std::endl;
+  this->normalizeDoc(*doc);
 
   // Do document term frequency vectorization
-  this->tfVectorizeDoc(doc);
+  std::cout << "Calculating term frequency" << std::endl;
+  this->tfVectorizeDoc(*doc);
 
-  return doc;
-}
+  // Add to map
+  doc_map[file.id] = std::move(doc);
 
-void DocVector::test() {
-  Document doc;
-  std::string content = "Hello there now it's so bad im writing on some documents on my laptop and its heating up my balls, i really wish that i didn't have to poop so bad right now.";
-  std::cout << content << std::endl;
-  std::cout << "Tokenizing" << std::endl;
-  doc.head = tokenizeDoc(content);
-  std::cout << "Removing stop words" << std::endl;
-  this->removeStopWords(doc);
-  std::cout << "Normalizing" << std::endl;
-  this->normalizeDoc(doc);
-  std::cout << doc.toString() << std::endl;
-
-  std::cout << "Vectorizing doc" << std::endl;
-  this->tfVectorizeDoc(doc);
-
-  for (auto pair : this->dictionary) {
-    std::cout << pair.first << ": " << doc.tf_vector.at(pair.second) << std::endl;
-  }
+  return *doc_map[file.id].get();
 }
 
 void DocVector::tfVectorizeDoc(Document& doc) {
@@ -146,9 +231,9 @@ void DocVector::removeStopWords(Document& doc) {
       WordNode* temp = curr->next.get();
       curr->unlink();
       curr = temp;
+    } else {
+      curr = curr->next.get();
     }
-
-    curr = curr->next.get();
   }
 }
 
@@ -205,4 +290,15 @@ SmartWord DocVector::tokenizeDoc(std::string& content) {
 void DocVector::toLowercase(std::string& str) {
   std::transform(str.begin(), str.end(), str.begin(), 
                  [](unsigned char c){ return std::tolower(c); });
+}
+
+json DocVector::loadJson(const std::string& filepath) {
+  std::ifstream file(filepath);
+  if (!file.is_open()) {
+    throw std::runtime_error("Could not open file: " + filepath);
+  }
+
+  json j;
+  file >> j;
+  return j;
 }

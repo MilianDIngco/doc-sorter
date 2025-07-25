@@ -14,8 +14,8 @@ extern "C" {
 int main() {
   DriveAuthorization da;
 
-  /*
   // Try to get access code first
+  std::cout << "Trying to load tokens" << std::endl;
   if (!da.loadTokens()) {
     // If fail, generate auth url
     std::cout << "Open this link in your browser: " << da.generateAuthURL() << std::endl;
@@ -33,28 +33,31 @@ int main() {
     }
 
     std::cout << "This is your access token " << da.getValidAccessToken() << std::endl;
-  }*/
+  }
 
   // Make drive client
+  std::cout << "Making drive client" << std::endl;
   DriveClient dc(da);
 
   // make document vectorizer
+  std::cout << "Creating vectorizer" << std::endl;
   DocVector dv(dc);
 
-  dv.test();
-
-  /*
   std::vector<DriveFile> files = dc.listFiles();
   DriveFile documentFile;
   for (int i = 0; i < (int) files.size(); i++) {
     if (files.at(i).isDoc()) {
-      documentFile = files.at(i);
+      std::cout << "Trying to load file " << files.at(i).name << std::endl;
+      dv.vectorizeDoc(files.at(i));
     }
   } 
 
-  Document doc = dv.VectorizeDoc(documentFile.id);
-  std::cout << doc.toString() << std::endl;
-  */
+  std::cout << "Calculating idf" << std::endl;
+  dv.calculateIDF();
+
+  std::cout << "Saving json file" << std::endl;
+  dv.saveJSON();
+
 
   // go thru each file, check if document 
   // check if document id exists in local json file

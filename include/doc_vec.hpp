@@ -2,12 +2,17 @@
 #define DOCVEC
 
 #include "drive_client.hpp"
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 extern "C" {
   #include "libstemmer.h"
@@ -67,6 +72,7 @@ struct Document {
 };
 
 using SmartWord = std::unique_ptr<WordNode>;
+using SmartDoc = std::unique_ptr<Document>;
 
 class DocVector {
   private:
@@ -77,10 +83,11 @@ class DocVector {
     std::unordered_map<std::string, int> dictionary;
     std::vector<int> doc_freq;
     int total_words;
+    std::string doc_filepath = ".documents.json";
+    json docJSON;
+    std::unordered_map<std::string, std::unique_ptr<Document>> doc_map;
 
-    void saveDocument(Document document);
-
-    std::vector<Document> loadDocuments(const std::string& filepath);
+    void loadDocuments(const std::string& filepath);
 
     void loadStopWords();
 
@@ -94,21 +101,34 @@ class DocVector {
 
     static void toLowercase(std::string& str);
 
+    json loadJson(const std::string& filepath);
+
+    void saveDocument(Document* document);
+
   public: 
     DocVector(DriveClient dc) : dc(dc) { 
       loadStopWords();
+
+      // Create word normalizer
       this->stemmer = sb_stemmer_new("english", "UTF_8");
       if (!stemmer) {
         throw std::runtime_error("ERROR: Could not create stemmer");
       }
       total_words = 0;
+
+      // Try to load json document
+      try {
+        loadDocuments(this->doc_filepath);
+      } catch (std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
+      }
     };
 
-    Document vectorizeDoc(const std::string& doc_id);
+    Document& vectorizeDoc(DriveFile& file);
 
-    void calculateIDF(std::vector<Document>& documents);
+    void calculateIDF();
 
-    void test();
+    void saveJSON();
 
 };
 
