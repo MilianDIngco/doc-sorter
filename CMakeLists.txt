@@ -89,6 +89,7 @@ add_executable(docsorter
   src/auth.cpp
   src/drive_client.cpp
   src/doc_vec.cpp
+  src/kmeans.cpp
 )
 
 target_link_libraries(docsorter

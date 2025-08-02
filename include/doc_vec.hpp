@@ -37,6 +37,7 @@ struct Document {
   std::string id; 
   std::string name; 
   std::string modifiedTime;
+  int group;
 
   std::unique_ptr<WordNode> head;
   std::vector<int> tf_vector;
@@ -80,7 +81,6 @@ class DocVector {
     std::string stop_words_filepath = "./data/EN-Stopwords.txt";
     std::unordered_set<std::string> stop_words;
     sb_stemmer* stemmer;
-    std::unordered_map<std::string, int> dictionary;
     std::vector<int> doc_freq;
     int total_words;
     std::string doc_filepath = ".documents.json";
@@ -106,6 +106,8 @@ class DocVector {
     void saveDocument(Document* document);
 
   public: 
+    std::unordered_map<std::string, int> dictionary;
+
     DocVector(DriveClient dc) : dc(dc) { 
       loadStopWords();
 
@@ -124,12 +126,15 @@ class DocVector {
       }
     };
 
-    Document& vectorizeDoc(DriveFile& file);
+    Document* vectorizeDoc(DriveFile& file);
 
     void calculateIDF();
 
     void saveJSON();
 
+    int getTotalWords();
+
+    std::vector<Document*> getDocuments();
 };
 
 #endif // DOCVEC
